@@ -36,4 +36,18 @@ with open('localidades.csv') as archivo_csv:
             
             writer.writerows(localidades_por_provincia[pro])
 
+cursor = db.cursor()
+create_table = "CREATE TABLE provincias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255))"
+nombres_provincias = list(localidades_por_provincia.keys())
+create_table_localidades = "CREATE TABLE localidades (provincia INT, id INT PRIMARY KEY, localidad VARCHAR(255), cp VARCHAR(10), id_prov_mstr INT)"
+
+try:
+    # for prov in nombres_provincias:
+    #     cursor.execute(f'INSERT INTO provincias (nombre) VALUES ("{prov}")')
+    # cursor.execute(create_table)
+    cursor.execute(create_table_localidades)
+    db.commit()
+except:
+    db.rollback()
+
 db.close()
