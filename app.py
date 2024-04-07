@@ -18,5 +18,11 @@ with open('localidades.csv') as archivo_csv:
             localidades_por_provincia[loc['provincia']] = []
         localidades_por_provincia[loc['provincia']].append(loc)
     
-    for i in localidades_por_provincia:
-        print(i, len(localidades_por_provincia[i]))
+    for pro in localidades_por_provincia:
+
+        columnas = localidades_por_provincia[pro][0].keys()
+        with open(f'localidades_provincias/{pro}.csv', mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=columnas)
+            writer.writeheader()
+            
+            writer.writerows(localidades_por_provincia[pro])
