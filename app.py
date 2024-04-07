@@ -1,4 +1,13 @@
 import csv
+import sys
+import MySQLdb
+
+try:
+    db = MySQLdb.Connect(host='localhost', user='root', password='', db='localidadesdb')
+except MySQLdb.Error as err:
+    print("No se pudo conectar a la base de datos:", err)
+    sys.exit(1)
+print("Conexión correcta.")
 
 with open('localidades.csv') as archivo_csv:
     lector_csv = csv.reader(archivo_csv, delimiter=',', quotechar='"')
@@ -26,3 +35,5 @@ with open('localidades.csv') as archivo_csv:
             writer.writeheader()
             
             writer.writerows(localidades_por_provincia[pro])
+
+db.close()
