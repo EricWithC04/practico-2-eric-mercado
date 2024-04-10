@@ -39,15 +39,37 @@ with open('localidades.csv') as archivo_csv:
 cursor = db.cursor()
 create_table = "CREATE TABLE provincias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255))"
 nombres_provincias = list(localidades_por_provincia.keys())
-create_table_localidades = "CREATE TABLE localidades (provincia INT, id INT PRIMARY KEY, localidad VARCHAR(255), cp VARCHAR(10), id_prov_mstr INT)"
+create_table_localidades = "CREATE TABLE localidades (provincia INT, localidad VARCHAR(255), cp VARCHAR(10), id_prov_mstr INT)"
 
 try:
-    # for prov in nombres_provincias:
-    #     cursor.execute(f'INSERT INTO provincias (nombre) VALUES ("{prov}")')
-    # cursor.execute(create_table)
+    cursor.execute("DROP TABLE IF EXISTS localidades")
+    cursor.execute("DROP TABLE IF EXISTS provincias")
+    cursor.execute(create_table)
     cursor.execute(create_table_localidades)
+    
+    for i, prov in enumerate(nombres_provincias, start=1):
+        cursor.execute(f'INSERT INTO provincias (id, nombre) VALUES ("{i}", "{prov}")')
     db.commit()
-except:
+
+    cursor.execute("SELECT * FROM provincias")
+    id_provinces = dict(cursor.fetchall())
+    db.commit()
+
+    provinces_id = {v: k for k, v in id_provinces.items()}
+    localidades_con_id = []
+
+    for loca in localidades:
+        localidades_con_id.append({
+            **loca,
+            "provincia": provinces_id[loca["provincia"]]
+        })
+    
+    for loc in localidades_con_id:
+        cursor.execute(f'INSERT INTO localidades (provincia, localidad, cp, id_prov_mstr) VALUES ({loc["provincia"]}, "{loc["localidad"]}", "{loc["cp"]}", {loc["id_prov_mstr"]})')
+    db.commit()
+
+except Exception as e:
+    print("Error: ", e)
     db.rollback()
 
 db.close()
