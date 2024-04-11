@@ -19,55 +19,39 @@ with open('localidades.csv') as archivo_csv:
         for i in range(len(cabecera)):
             loc[cabecera[i]] = fila[i]
         localidades.append(loc)
-
-    localidades_por_provincia = {}
-
-    for loc in localidades:
-        if loc['provincia'] not in localidades_por_provincia:
-            localidades_por_provincia[loc['provincia']] = []
-        localidades_por_provincia[loc['provincia']].append(loc)
-    
-    for pro in localidades_por_provincia:
-
-        columnas = localidades_por_provincia[pro][0].keys()
-        with open(f'localidades_provincias/{pro}.csv', mode='w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=columnas)
-            writer.writeheader()
-            
-            writer.writerows(localidades_por_provincia[pro])
+    print("CSV leido correctamente.")
 
 cursor = db.cursor()
-create_table = "CREATE TABLE provincias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255))"
-nombres_provincias = list(localidades_por_provincia.keys())
-create_table_localidades = "CREATE TABLE localidades (provincia INT, localidad VARCHAR(255), cp VARCHAR(10), id_prov_mstr INT)"
+
+create_table_localidades = "CREATE TABLE localidades (provincia VARCHAR(255), id INT, localidad VARCHAR(255), cp VARCHAR(10), id_prov_mstr INT)"
+
+select_all_provinces = "SELECT provincia AS 'Provincia', COUNT(*) AS 'Localidades' FROM `localidades` GROUP BY provincia"
 
 try:
     cursor.execute("DROP TABLE IF EXISTS localidades")
-    cursor.execute("DROP TABLE IF EXISTS provincias")
-    cursor.execute(create_table)
     cursor.execute(create_table_localidades)
+    print("Tabla creada con exito.")
+
+    for loc in localidades:
+        cursor.execute(f'INSERT INTO localidades (provincia, id, localidad, cp, id_prov_mstr) VALUES ("{loc["provincia"]}", {loc["id"]}, "{loc["localidad"]}", "{loc["cp"]}", {loc["id_prov_mstr"]})')
+    db.commit()
+    print("Registros insertados con exito.")
+
+    cursor.execute(select_all_provinces)
+    provinces_localities = dict(cursor.fetchall())
+
+    all_provinces = list(provinces_localities.keys())
+
+    for prov in all_provinces:
+        cursor.execute(f'SELECT * FROM localidades WHERE provincia = "{prov}"')
+        locs = list(cursor.fetchall())
+        with open(f'localidades_provincias/{prov}.csv', mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(cabecera)
+            writer.writerows(locs)
+            writer.writerow(["Total de localidades: " + str(provinces_localities[prov])])
+    print("CSVs creados con exito.")
     
-    for i, prov in enumerate(nombres_provincias, start=1):
-        cursor.execute(f'INSERT INTO provincias (id, nombre) VALUES ("{i}", "{prov}")')
-    db.commit()
-
-    cursor.execute("SELECT * FROM provincias")
-    id_provinces = dict(cursor.fetchall())
-    db.commit()
-
-    provinces_id = {v: k for k, v in id_provinces.items()}
-    localidades_con_id = []
-
-    for loca in localidades:
-        localidades_con_id.append({
-            **loca,
-            "provincia": provinces_id[loca["provincia"]]
-        })
-    
-    for loc in localidades_con_id:
-        cursor.execute(f'INSERT INTO localidades (provincia, localidad, cp, id_prov_mstr) VALUES ({loc["provincia"]}, "{loc["localidad"]}", "{loc["cp"]}", {loc["id_prov_mstr"]})')
-    db.commit()
-
 except Exception as e:
     print("Error: ", e)
     db.rollback()
