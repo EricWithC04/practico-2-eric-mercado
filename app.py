@@ -27,13 +27,20 @@ create_table_localidades = "CREATE TABLE localidades (provincia VARCHAR(255), id
 
 select_all_provinces = "SELECT provincia AS 'Provincia', COUNT(*) AS 'Localidades' FROM `localidades` GROUP BY provincia"
 
+drop_if_exists = "DROP TABLE IF EXISTS localidades"
+
+insert_localidades = 'INSERT INTO localidades (provincia, id, localidad, cp, id_prov_mstr) VALUES (%s, %s, %s, %s, %s)'
+
+select_localidades = 'SELECT * FROM localidades WHERE provincia = %s'
+
 try:
-    cursor.execute("DROP TABLE IF EXISTS localidades")
+    cursor.execute(drop_if_exists)
     cursor.execute(create_table_localidades)
     print("Tabla creada con exito.")
 
     for loc in localidades:
-        cursor.execute(f'INSERT INTO localidades (provincia, id, localidad, cp, id_prov_mstr) VALUES ("{loc["provincia"]}", {loc["id"]}, "{loc["localidad"]}", "{loc["cp"]}", {loc["id_prov_mstr"]})')
+        valores = [loc["provincia"], loc["id"], loc["localidad"], loc["cp"], loc["id_prov_mstr"]]
+        cursor.execute(insert_localidades, valores)
     db.commit()
     print("Registros insertados con exito.")
 
@@ -43,15 +50,17 @@ try:
     all_provinces = list(provinces_localities.keys())
 
     for prov in all_provinces:
-        cursor.execute(f'SELECT * FROM localidades WHERE provincia = "{prov}"')
+        cursor.execute(select_localidades, [prov])
         locs = list(cursor.fetchall())
+
         with open(f'localidades_provincias/{prov}.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(cabecera)
             writer.writerows(locs)
             writer.writerow(["Total de localidades: " + str(provinces_localities[prov])])
+
     print("CSVs creados con exito.")
-    
+
 except Exception as e:
     print("Error: ", e)
     db.rollback()
