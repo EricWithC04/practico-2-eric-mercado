@@ -17,10 +17,7 @@ with open('localidades.csv') as archivo_csv:
     localidades = []
 
     for fila in lector_csv:
-        loc = {}
-        for i in range(len(cabecera)):
-            loc[cabecera[i]] = fila[i]
-        localidades.append(loc)
+        localidades.append(fila)
     print("CSV leido correctamente.")
 
 cursor = db.cursor()
@@ -43,9 +40,7 @@ try:
     print("Tabla creada con exito.")
 
     # Insertamos todos los registros de localidades
-    for loc in localidades:
-        valores = [loc["provincia"], loc["id"], loc["localidad"], loc["cp"], loc["id_prov_mstr"]]
-        cursor.execute(insert_localidades, valores)
+    cursor.executemany(insert_localidades, localidades)
     db.commit()
     print("Registros insertados con exito.")
 
